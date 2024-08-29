@@ -1,0 +1,42 @@
+name: Deploy Backend with MongoDB
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint and test
+        run: npm test
+
+      - name: Deploy to server
+        env:
+          NODE_ENV: production
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: |
+          sshpass -p $SERVER_PASSWORD ssh $SERVER_USER@$SERVER_HOST <<EOF
+            cd /path/to/your/app
+            git pull origin main
+            npm install
+            export NODE_ENV=${NODE_ENV}
+            export MONGO_URI=${MONGO_URI}
+            pm2 restart all || pm2 start index.js
+          EOF
